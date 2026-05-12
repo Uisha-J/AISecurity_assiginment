@@ -1,0 +1,71 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Project artifacts
+_demo_run/
+checkpoints/
+reports/
+*.pt
+*.ckpt
+*.pth
+
+# Data (too large for git; user downloads via scripts/download_data.py)
+data/_archives/
+data/bonafide/*/
+data/spoof_known/*/
+data/spoof_self/*/
+data/wild/*/
+data/augment/*/
+data/prompts_example.jsonl
+!data/bonafide/.gitkeep
+!data/spoof_known/.gitkeep
+!data/spoof_self/.gitkeep
+!data/wild/.gitkeep
+!data/augment/.gitkeep
+
+# Red team submissions
+redteam/submissions/
+
+# Logs
+*.log
+runs/
+wandb/

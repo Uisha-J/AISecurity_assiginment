@@ -1,0 +1,18 @@
+# Protocol: SEEN attacks (in-distribution sanity check)
+# These attack algorithms are present in the TRAINING set.
+# Use ONLY for sanity check — never report as primary metric.
+
+name: seen
+description: "Sanity-check protocol; attacks identical to training distribution."
+
+bonafide:
+  - path: data/bonafide/voxceleb_dev
+    glob: "**/*.wav"
+
+spoof:
+  - path: data/spoof_known/asvspoof5_dev
+    attack_tag: A07
+  - path: data/spoof_self/dev_xtts
+    attack_tag: xtts_v2
+  - path: data/spoof_self/dev_rvc
+    attack_tag: rvc

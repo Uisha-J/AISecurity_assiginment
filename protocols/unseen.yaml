@@ -1,0 +1,20 @@
+# Protocol: UNSEEN attacks (held-out from Attack Zoo)
+# Attack algorithms here MUST NOT appear in training data.
+# This is the primary internal generalization metric.
+
+name: unseen
+description: "Algorithms held out from training; proxy for unknown attacks."
+
+bonafide:
+  - path: data/bonafide/voxceleb_eval
+    glob: "**/*.wav"
+
+spoof:
+  - path: data/spoof_self/eval_bark
+    attack_tag: bark
+  - path: data/spoof_self/eval_seed_vc
+    attack_tag: seed_vc
+  - path: data/spoof_self/eval_fish_speech
+    attack_tag: fish_speech
+  - path: data/spoof_self/eval_tortoise
+    attack_tag: tortoise

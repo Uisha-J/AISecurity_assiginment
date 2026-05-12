@@ -1,0 +1,15 @@
+# Protocol: DEV (validation during training)
+# Used for threshold calibration and early stopping. Never touch eval sets for tuning.
+
+name: dev
+description: "Validation split for early stopping and threshold calibration."
+
+bonafide:
+  - path: data/bonafide/voxceleb_dev
+    glob: "**/*.wav"
+
+spoof:
+  - path: data/spoof_known/asvspoof5_dev
+    attack_tag: asvspoof5_dev
+  - path: data/spoof_self/dev_mix
+    attack_tag: zoo_dev

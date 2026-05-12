@@ -1,0 +1,15 @@
+# Protocol: WILD (external, real-world)
+# Data we did not generate. Closest to real deployment.
+
+name: wild
+description: "External real-world datasets. The true generalization test."
+
+bonafide:
+  - path: data/wild/in_the_wild/bonafide
+    glob: "**/*.wav"
+
+spoof:
+  - path: data/wild/in_the_wild/spoof
+    attack_tag: in_the_wild
+  - path: data/wild/mlaad
+    attack_tag: mlaad
