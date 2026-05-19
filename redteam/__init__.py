@@ -8,6 +8,11 @@ Even without labels, we report score histograms — letting the red team see
 which of their samples crossed the threshold (= "got through").
 """
 
+from .attack_system import RedTeamAttackConfig, generate_redteam_submission
 from .evaluate_submission import evaluate_submission
 
-__all__ = ["evaluate_submission"]
+__all__ = [
+    "RedTeamAttackConfig",
+    "evaluate_submission",
+    "generate_redteam_submission",
+]

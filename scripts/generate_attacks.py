@@ -22,6 +22,8 @@ from ..attack_zoo.post_process.noise_mix import NoisePostProcessor
 
 
 GENERATOR_REGISTRY = {
+    "synthetic_tts": ("voice_defense.attack_zoo.tts.synthetic_tts", "SyntheticTTSAttack"),
+    "artifact_vc": ("voice_defense.attack_zoo.vc.artifact_vc", "ArtifactVCAttack"),
     "xtts": ("voice_defense.attack_zoo.tts.xtts", "XTTSAttack"),
     "openvoice": ("voice_defense.attack_zoo.tts.openvoice", "OpenVoiceAttack"),
     "tortoise": ("voice_defense.attack_zoo.tts.tortoise", "TortoiseAttack"),

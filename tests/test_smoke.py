@@ -61,6 +61,30 @@ def test_attack_zoo_dummy() -> None:
         print(f"[attack_zoo] dummy + orchestrator wrote {len(written)} samples  OK")
 
 
+def test_baseline_attack_generators() -> None:
+    from voice_defense.attack_zoo.tts.synthetic_tts import SyntheticTTSAttack
+    from voice_defense.attack_zoo.vc.artifact_vc import ArtifactVCAttack
+
+    with tempfile.TemporaryDirectory() as td:
+        td = Path(td)
+        _wav_pair(td, "source", 1)
+        source_wav = td / "source" / "source_000.wav"
+
+        tts = SyntheticTTSAttack()
+        tts_out = tts.generate(text="authorized red team baseline", seed=3)
+        assert tts_out.sample_rate == 16000
+        assert tts_out.waveform.ndim == 1
+        assert len(tts_out.waveform) >= 16000
+        assert tts_out.metadata.algorithm == "synthetic_tts"
+
+        vc = ArtifactVCAttack()
+        vc_out = vc.generate(target_wav=str(source_wav), seed=5)
+        assert vc_out.sample_rate == 16000
+        assert vc_out.waveform.shape[0] == 16000 * 4
+        assert vc_out.metadata.algorithm == "artifact_vc"
+        print("[attack_zoo] baseline TTS/VC generators OK")
+
+
 def test_protocol_loader_and_dataset() -> None:
     import yaml
     from voice_defense.data_pipeline.dataset import load_protocol, ProtocolDataset
@@ -172,16 +196,45 @@ def test_full_pipeline_no_ssl() -> None:
     print(f"[train] loss {initial_loss:.3f} -> {final_loss:.3f}  OK")
 
 
+def test_redteam_attack_builder() -> None:
+    from voice_defense.redteam.attack_system import (
+        RedTeamAttackConfig,
+        generate_redteam_submission,
+    )
+
+    with tempfile.TemporaryDirectory() as td:
+        td = Path(td)
+        _wav_pair(td, "spoof_input", 2)
+        out_dir = td / "submission"
+
+        manifest = generate_redteam_submission(RedTeamAttackConfig(
+            input_dir=str(td / "spoof_input"),
+            out_dir=str(out_dir),
+            variants_per_file=3,
+            keep_all=True,
+            seed=7,
+        ))
+
+        assert manifest["n_source_files"] == 2
+        assert manifest["n_output_files"] == 6
+        assert (out_dir / "labels.csv").exists()
+        assert (out_dir / "manifest.json").exists()
+        assert len(list(out_dir.glob("*.wav"))) == 6
+        print("[redteam] attack builder wrote submission artifacts  OK")
+
+
 def main() -> int:
     print("== voice_defense smoke tests ==")
     tests = [
         test_metrics,
         test_attack_zoo_dummy,
+        test_baseline_attack_generators,
         test_protocol_loader_and_dataset,
         test_rawboost_runs,
         test_loss_math,
         test_aasist_backend_shape,
         test_full_pipeline_no_ssl,
+        test_redteam_attack_builder,
     ]
     failed = 0
     for t in tests:
