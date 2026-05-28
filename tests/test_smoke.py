@@ -52,12 +52,14 @@ def test_attack_zoo_dummy() -> None:
         td = Path(td)
         orch = AttackOrchestrator([DummyTTS()], post_processors=[])
         prompts = [{"text": "hello"} for _ in range(3)]
-        written = orch.generate_batch(prompts=prompts, out_dir=td, n_total=3)
+        written = orch.generate_batch(prompts=prompts, out_dir=td, n_total=3,
+                                      show_progress=False)
         assert len(written) == 3
-        meta_files = list(td.glob("*.json"))
+        meta_files = sorted(td.glob("sample_*.json"))
         assert len(meta_files) == 3
         meta = json.loads(meta_files[0].read_text(encoding="utf-8"))
         assert meta["algorithm"] == "dummy_tts"
+        assert (td / "manifest.json").exists()
         print(f"[attack_zoo] dummy + orchestrator wrote {len(written)} samples  OK")
 
 
