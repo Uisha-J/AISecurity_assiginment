@@ -1,0 +1,5 @@
+{"text": "this is an authorized red team baseline sample", "target_wav": "data/seed_speech/seed_000.wav"}
+{"text": "please verify the speaker before approving the transfer", "target_wav": "data/seed_speech/seed_000.wav"}
+{"text": "thank you for confirming your account information", "target_wav": "data/seed_speech/seed_000.wav"}
+{"text": "your one time password is one two three four five six", "target_wav": "data/seed_speech/seed_000.wav"}
+{"text": "hello this is a synthetic voice generated for defense training", "target_wav": "data/seed_speech/seed_000.wav"}

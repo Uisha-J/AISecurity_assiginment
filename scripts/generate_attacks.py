@@ -45,13 +45,29 @@ def _load_generator(name: str, kwargs: dict):
 
 
 def _load_prompts(jsonl_path: Path) -> list[dict]:
+    if not jsonl_path.exists():
+        raise FileNotFoundError(
+            f"prompts file not found: {jsonl_path}. "
+            f"create it with one JSON object per line, e.g. "
+            f'{{"text": "hello world"}}'
+        )
+    # utf-8-sig transparently strips a BOM if the file was saved by
+    # Notepad / PowerShell `>` redirection on Windows.
     prompts: list[dict] = []
-    with jsonl_path.open("r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
+    with jsonl_path.open("r", encoding="utf-8-sig") as f:
+        for ln, raw in enumerate(f, start=1):
+            line = raw.strip()
             if not line:
                 continue
-            prompts.append(json.loads(line))
+            try:
+                prompts.append(json.loads(line))
+            except json.JSONDecodeError as e:
+                raise ValueError(
+                    f"{jsonl_path}:{ln}: invalid JSON ({e.msg}). "
+                    f"each line must be a single JSON object."
+                ) from e
+    if not prompts:
+        raise ValueError(f"{jsonl_path} contains no prompts.")
     return prompts
 
 
@@ -113,9 +129,15 @@ def main() -> None:
 
     prompts = _load_prompts(Path(args.prompts_jsonl))
     n = args.n_samples if args.n_samples > 0 else len(prompts)
-    print(f"[run] generating {n} samples into {args.out_dir}")
+    print(f"[run] generating {n} samples into {args.out_dir} "
+          f"(prompts={len(prompts)}, seed={args.seed})")
     written = orch.generate_batch(prompts=prompts, out_dir=args.out_dir, n_total=n)
-    print(f"[done] wrote {len(written)} files")
+    n_failed = n - len(written)
+    print(f"[done] wrote {len(written)}/{n} files  "
+          f"(failed={n_failed})  manifest -> {args.out_dir}/manifest.json")
+    if n_failed and len(written) == 0:
+        print("[warn] every sample failed — check that prompts have the keys "
+              "your selected pipelines require (text for TTS, target_wav for VC).")
 
 
 if __name__ == "__main__":

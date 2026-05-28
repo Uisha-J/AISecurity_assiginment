@@ -196,6 +196,88 @@ def test_full_pipeline_no_ssl() -> None:
     print(f"[train] loss {initial_loss:.3f} -> {final_loss:.3f}  OK")
 
 
+def test_prompt_loader_robust() -> None:
+    """Regression guard for the JSONL loader used by generate_attacks.
+
+    Covers the four failure modes the CLI must handle gracefully:
+      - UTF-8 BOM (Notepad / PowerShell default)
+      - missing file
+      - empty file
+      - one well-formed line + one malformed line
+    """
+    from voice_defense.scripts.generate_attacks import _load_prompts
+
+    with tempfile.TemporaryDirectory() as td:
+        td = Path(td)
+
+        bom = td / "bom.jsonl"
+        bom.write_bytes('\ufeff{"text":"hello"}\n{"text":"world"}\n'.encode("utf-8"))
+        rows = _load_prompts(bom)
+        assert rows == [{"text": "hello"}, {"text": "world"}], rows
+
+        missing = td / "missing.jsonl"
+        try:
+            _load_prompts(missing)
+        except FileNotFoundError:
+            pass
+        else:
+            raise AssertionError("missing file should raise FileNotFoundError")
+
+        empty = td / "empty.jsonl"
+        empty.write_text("", encoding="utf-8")
+        try:
+            _load_prompts(empty)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("empty file should raise ValueError")
+
+        bad = td / "bad.jsonl"
+        bad.write_text('{"text":"ok"}\nthis is not json\n', encoding="utf-8")
+        try:
+            _load_prompts(bad)
+        except ValueError as e:
+            assert "bad.jsonl:2" in str(e), e
+        else:
+            raise AssertionError("bad JSON line should raise ValueError")
+
+        print("[scripts] _load_prompts handles BOM / missing / empty / bad JSON  OK")
+
+
+def test_orchestrator_determinism_and_manifest() -> None:
+    """Same seed + same prompts must produce byte-identical outputs and a manifest."""
+    import json as _json
+    from voice_defense.attack_zoo.base import DummyTTS
+    from voice_defense.attack_zoo.orchestrator import AttackOrchestrator
+
+    prompts = [{"text": f"prompt {i}"} for i in range(3)]
+
+    def _run(seed: int, out: Path) -> list[Path]:
+        orch = AttackOrchestrator([DummyTTS()], post_processors=[],
+                                  rng=random.Random(seed))
+        return orch.generate_batch(prompts=prompts, out_dir=out, n_total=6,
+                                   show_progress=False)
+
+    import random
+    with tempfile.TemporaryDirectory() as td:
+        td = Path(td)
+        run_a = td / "a"
+        run_b = td / "b"
+        a = _run(1234, run_a)
+        b = _run(1234, run_b)
+        assert len(a) == 6 and len(b) == 6
+
+        for wav_a, wav_b in zip(sorted(run_a.glob("*.wav")),
+                                sorted(run_b.glob("*.wav"))):
+            assert wav_a.read_bytes() == wav_b.read_bytes(), wav_a
+
+        manifest = _json.loads((run_a / "manifest.json").read_text(encoding="utf-8"))
+        assert manifest["n_written"] == 6
+        assert manifest["n_failed"] == 0
+        assert "dummy_tts" in manifest["pipeline_usage"]
+        print("[attack_zoo] orchestrator is deterministic and writes manifest  OK")
+
+
 def test_redteam_attack_builder() -> None:
     from voice_defense.redteam.attack_system import (
         RedTeamAttackConfig,
@@ -229,6 +311,8 @@ def main() -> int:
         test_metrics,
         test_attack_zoo_dummy,
         test_baseline_attack_generators,
+        test_prompt_loader_robust,
+        test_orchestrator_determinism_and_manifest,
         test_protocol_loader_and_dataset,
         test_rawboost_runs,
         test_loss_math,

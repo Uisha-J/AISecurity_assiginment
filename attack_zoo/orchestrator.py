@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import random
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable, Optional, Sequence
 
@@ -16,6 +17,17 @@ import numpy as np
 import soundfile as sf
 
 from .base import AttackGenerator, PostProcessor
+
+
+def _tqdm(iterable, *, total: Optional[int] = None, desc: str = "", disable: bool = False):
+    """tqdm if available, otherwise a passthrough."""
+    if disable:
+        return iterable
+    try:
+        from tqdm.auto import tqdm  # type: ignore
+        return tqdm(iterable, total=total, desc=desc, unit="sample")
+    except ImportError:
+        return iterable
 
 
 @dataclass
@@ -94,11 +106,17 @@ class AttackOrchestrator:
         prompts: Iterable[dict],
         out_dir: str | Path,
         n_total: Optional[int] = None,
+        show_progress: bool = True,
+        write_manifest: bool = True,
     ) -> list[Path]:
         """`prompts` is an iterable of dicts with keys: text, reference_wav, target_wav.
 
         We loop prompts (with replacement if exhausted) until n_total written
         or prompts iterable is exhausted (whichever comes first).
+
+        Per-sample seeds are derived deterministically from the orchestrator's
+        rng when the prompt itself does not carry one. With the same `--seed`
+        the generated set is byte-for-byte reproducible.
         """
         out_dir = Path(out_dir)
         out_dir.mkdir(parents=True, exist_ok=True)
@@ -108,27 +126,71 @@ class AttackOrchestrator:
             raise ValueError("`prompts` must be non-empty")
 
         written: list[Path] = []
+        failures: list[dict] = []
+        pipeline_usage: dict[str, int] = {}
         target = n_total if n_total is not None else len(prompts_list)
-        for i in range(target):
+
+        progress = _tqdm(
+            range(target),
+            total=target,
+            desc="generate_attacks",
+            disable=not show_progress,
+        )
+        for i in progress:
             p = prompts_list[i % len(prompts_list)]
+            sample_seed = p.get("seed")
+            if sample_seed is None:
+                # deterministic per-sample seed derived from orchestrator rng
+                sample_seed = self.rng.randint(0, 2**31 - 1)
+
             try:
                 wav, sr, meta = self.run_one(
                     text=p.get("text"),
                     reference_wav=p.get("reference_wav"),
                     target_wav=p.get("target_wav"),
-                    seed=p.get("seed"),
+                    seed=sample_seed,
                 )
             except Exception as e:
-                # log + skip, keep batch alive
                 err_path = out_dir / f"sample_{i:06d}.error.txt"
                 err_path.write_text(f"{type(e).__name__}: {e}", encoding="utf-8")
+                failures.append({
+                    "index": i,
+                    "error": f"{type(e).__name__}: {e}",
+                    "prompt": p,
+                })
                 continue
+
             wav_path = out_dir / f"sample_{i:06d}.wav"
             meta_path = out_dir / f"sample_{i:06d}.json"
             sf.write(str(wav_path), wav, sr)
             meta_path.write_text(json.dumps(meta, ensure_ascii=False, indent=2),
                                  encoding="utf-8")
             written.append(wav_path)
+
+            algo = meta.get("algorithm", "?")
+            chain = meta.get("post_processing") or []
+            pipeline_key = algo + (("+" + "+".join(chain)) if chain else "")
+            pipeline_usage[pipeline_key] = pipeline_usage.get(pipeline_key, 0) + 1
+
+        if write_manifest:
+            manifest = {
+                "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                "out_dir": str(out_dir),
+                "n_requested": target,
+                "n_written": len(written),
+                "n_failed": len(failures),
+                "n_prompts": len(prompts_list),
+                "generators_available": [g.name for g in self.generators],
+                "post_processors_available": [p.name for p in self.post_processors],
+                "pipeline_usage": dict(sorted(pipeline_usage.items(),
+                                              key=lambda kv: -kv[1])),
+                "failures_head": failures[:10],
+            }
+            (out_dir / "manifest.json").write_text(
+                json.dumps(manifest, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+
         return written
 
     # ------------------------------------------------------------------ info
