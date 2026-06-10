@@ -1,0 +1,36 @@
+seed: 42
+device: cuda
+
+attack:
+  librispeech_subset: "test-clean"
+  num_target_speakers: 20
+  sample_durations: [5, 10, 30]
+  texts:
+    - "Please verify my identity for account access."
+    - "The quick brown fox jumps over the lazy dog."
+    - "This is a voice authentication test sample."
+  tts_model: "tts_models/multilingual/multi-dataset/xtts_v2"
+
+verification:
+  model: "speechbrain/spkrec-ecapa-voxceleb"
+  threshold: 0.25
+  threshold_sweep: [0.15, 0.20, 0.25, 0.30, 0.35]
+
+defense:
+  alt_detector:
+    enabled: true
+    model_type: lcnn
+    feature_type: lfcc
+    n_lfcc: 60
+    epochs: 30
+  domain_gap:
+    enabled: true
+    max_files: 500
+  finetune:
+    enabled: true
+    cloned_ratio: 0.3
+    epochs: 10
+
+evaluation:
+  plot_format: [png, pdf]
+  plot_dpi: 300

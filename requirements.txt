@@ -29,6 +29,15 @@ pyloudnorm>=0.1.1
 # pyrubberband
 # pesq
 
+# Visualization
+seaborn>=0.12
+
 # CLI
 click>=8.1
 rich>=13.0
+
+# Speaker verification (red-team ASR)
+# speechbrain>=0.5.16       # install on demand
+
+# Demo (mic recording)
+# pyaudio>=0.2.14           # install on demand
