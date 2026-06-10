@@ -1,19 +1,22 @@
-"""Audio I/O and processing utilities."""
+"""Audio I/O and processing utilities.
+
+Loading uses soundfile + librosa (not torchaudio.load) so it works without
+torchaudio's codec backend (torchcodec), which is not always installed.
+"""
 
 from pathlib import Path
 import numpy as np
-import torchaudio
 import librosa
 import soundfile as sf
 
 
 def load_audio(path, target_sr=16000, mono=True):
-    waveform, sr = torchaudio.load(path)
-    if mono and waveform.shape[0] > 1:
-        waveform = waveform.mean(dim=0, keepdim=True)
+    waveform, sr = sf.read(str(path), dtype="float32")
+    if mono and waveform.ndim > 1:
+        waveform = waveform.mean(axis=1)
     if sr != target_sr:
-        waveform = torchaudio.transforms.Resample(sr, target_sr)(waveform)
-    return waveform.squeeze(0).numpy(), target_sr
+        waveform = librosa.resample(waveform, orig_sr=sr, target_sr=target_sr)
+    return waveform.astype(np.float32), target_sr
 
 
 def save_audio(waveform, path, sr=16000):

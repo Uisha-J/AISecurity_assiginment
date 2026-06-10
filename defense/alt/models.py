@@ -40,14 +40,18 @@ class LCNN(nn.Module):
             LCNNBlock(64, 64, 1, 0), LCNNBlock(64, 32, 3, 1),
             LCNNBlock(32, 32, 1, 0), LCNNBlock(32, 32, 3, 1), nn.MaxPool2d(2, 2),
         )
-        with torch.no_grad():
-            d = self.features(torch.zeros(1, 1, n_lfcc, 200)).view(1, -1).shape[1]
-        self.fc = nn.Sequential(nn.Linear(d, 128), nn.ReLU(), nn.Dropout(0.5), nn.Linear(128, 2))
+        # Adaptive pooling makes the head independent of input length AND n_lfcc,
+        # so the model accepts variable-duration audio without shape mismatch.
+        self.pool = nn.AdaptiveAvgPool2d((4, 4))
+        self.fc = nn.Sequential(
+            nn.Linear(32 * 4 * 4, 128), nn.ReLU(), nn.Dropout(0.5), nn.Linear(128, 2),
+        )
 
     def forward(self, x):
         if x.dim() == 3:
             x = x.unsqueeze(1)
-        return self.fc(self.features(x).view(x.size(0), -1))
+        x = self.pool(self.features(x))
+        return self.fc(x.view(x.size(0), -1))
 
 
 # ------------------------------------------------------------------ RawNet2
