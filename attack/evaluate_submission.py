@@ -24,7 +24,7 @@ import numpy as np
 import torch
 import soundfile as sf
 
-from ..defense.model import SpoofDetector, SpoofDetectorConfig
+from ..defense.aasist.model import SpoofDetector, SpoofDetectorConfig
 from ..evaluation.metrics import compute_eer, compute_min_tdcf
 
 

@@ -19,7 +19,7 @@ from typing import Callable, Optional
 import numpy as np
 import soundfile as sf
 
-from ..data_pipeline.augment import RawBoost
+from ..common.augment import RawBoost
 
 
 Transform = Callable[[np.ndarray, int], np.ndarray]

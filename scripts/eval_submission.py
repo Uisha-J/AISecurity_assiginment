@@ -9,7 +9,7 @@ Example:
 from __future__ import annotations
 import argparse
 
-from ..redteam.evaluate_submission import evaluate_submission
+from ..attack.evaluate_submission import evaluate_submission
 
 
 def main() -> None:

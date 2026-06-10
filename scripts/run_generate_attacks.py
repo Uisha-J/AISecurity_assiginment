@@ -1,7 +1,7 @@
 """CLI: generate a batch of spoofed audio using the Attack Zoo.
 
 Example:
-    python -m voice_defense.scripts.generate_attacks \
+    python -m voice_defense.scripts.run_generate_attacks \
         --prompts-jsonl data/prompts/train.jsonl \
         --out-dir data/spoof_self/train \
         --pipelines xtts,rvc,openvoice \
@@ -14,22 +14,22 @@ import json
 import random
 from pathlib import Path
 
-from ..attack_zoo.base import DummyTTS
-from ..attack_zoo.orchestrator import AttackOrchestrator
-from ..attack_zoo.post_process.codec import CodecPostProcessor
-from ..attack_zoo.post_process.room_ir import RoomIRPostProcessor
-from ..attack_zoo.post_process.noise_mix import NoisePostProcessor
+from ..attack.zoo.base import DummyTTS
+from ..attack.zoo.orchestrator import AttackOrchestrator
+from ..attack.zoo.post_process.codec import CodecPostProcessor
+from ..attack.zoo.post_process.room_ir import RoomIRPostProcessor
+from ..attack.zoo.post_process.noise_mix import NoisePostProcessor
 
 
 GENERATOR_REGISTRY = {
-    "synthetic_tts": ("voice_defense.attack_zoo.tts.synthetic_tts", "SyntheticTTSAttack"),
-    "artifact_vc": ("voice_defense.attack_zoo.vc.artifact_vc", "ArtifactVCAttack"),
-    "xtts": ("voice_defense.attack_zoo.tts.xtts", "XTTSAttack"),
-    "openvoice": ("voice_defense.attack_zoo.tts.openvoice", "OpenVoiceAttack"),
-    "tortoise": ("voice_defense.attack_zoo.tts.tortoise", "TortoiseAttack"),
-    "bark": ("voice_defense.attack_zoo.tts.bark", "BarkAttack"),
-    "rvc": ("voice_defense.attack_zoo.vc.rvc", "RVCAttack"),
-    "seed_vc": ("voice_defense.attack_zoo.vc.seed_vc", "SeedVCAttack"),
+    "synthetic_tts": ("voice_defense.attack.zoo.tts.synthetic_tts", "SyntheticTTSAttack"),
+    "artifact_vc": ("voice_defense.attack.zoo.vc.artifact_vc", "ArtifactVCAttack"),
+    "xtts": ("voice_defense.attack.zoo.tts.xtts", "XTTSAttack"),
+    "openvoice": ("voice_defense.attack.zoo.tts.openvoice", "OpenVoiceAttack"),
+    "tortoise": ("voice_defense.attack.zoo.tts.tortoise", "TortoiseAttack"),
+    "bark": ("voice_defense.attack.zoo.tts.bark", "BarkAttack"),
+    "rvc": ("voice_defense.attack.zoo.vc.rvc", "RVCAttack"),
+    "seed_vc": ("voice_defense.attack.zoo.vc.seed_vc", "SeedVCAttack"),
     "dummy": (None, None),       # always-available fallback
 }
 

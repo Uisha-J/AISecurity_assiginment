@@ -45,8 +45,8 @@ def test_metrics() -> None:
 
 
 def test_attack_zoo_dummy() -> None:
-    from voice_defense.attack_zoo.base import DummyTTS
-    from voice_defense.attack_zoo.orchestrator import AttackOrchestrator
+    from voice_defense.attack.zoo.base import DummyTTS
+    from voice_defense.attack.zoo.orchestrator import AttackOrchestrator
 
     with tempfile.TemporaryDirectory() as td:
         td = Path(td)
@@ -64,8 +64,8 @@ def test_attack_zoo_dummy() -> None:
 
 
 def test_baseline_attack_generators() -> None:
-    from voice_defense.attack_zoo.tts.synthetic_tts import SyntheticTTSAttack
-    from voice_defense.attack_zoo.vc.artifact_vc import ArtifactVCAttack
+    from voice_defense.attack.zoo.tts.synthetic_tts import SyntheticTTSAttack
+    from voice_defense.attack.zoo.vc.artifact_vc import ArtifactVCAttack
 
     with tempfile.TemporaryDirectory() as td:
         td = Path(td)
@@ -89,7 +89,7 @@ def test_baseline_attack_generators() -> None:
 
 def test_protocol_loader_and_dataset() -> None:
     import yaml
-    from voice_defense.data_pipeline.dataset import load_protocol, ProtocolDataset
+    from voice_defense.common.dataset import load_protocol, ProtocolDataset
 
     with tempfile.TemporaryDirectory() as td:
         td = Path(td)
@@ -124,7 +124,7 @@ def test_protocol_loader_and_dataset() -> None:
 
 
 def test_rawboost_runs() -> None:
-    from voice_defense.data_pipeline.augment import RawBoost
+    from voice_defense.common.augment import RawBoost
     rb = RawBoost()
     x = (np.random.randn(16000).astype(np.float32) * 0.1)
     for _ in range(5):
@@ -136,7 +136,7 @@ def test_rawboost_runs() -> None:
 
 def test_loss_math() -> None:
     import torch
-    from voice_defense.defense.loss import OCSoftmaxLoss
+    from voice_defense.defense.aasist.loss import OCSoftmaxLoss
     loss_fn = OCSoftmaxLoss(feat_dim=8)
     emb = torch.randn(16, 8)
     labels = torch.randint(0, 2, (16,))
@@ -151,7 +151,7 @@ def test_loss_math() -> None:
 
 def test_aasist_backend_shape() -> None:
     import torch
-    from voice_defense.defense.backend import AASIST
+    from voice_defense.defense.aasist.backend import AASIST
     backend = AASIST(in_dim=64, gat_dim=32, n_subgraph_nodes=8, embed_dim=16)
     x = torch.randn(2, 50, 64)  # (B, T, D)
     z = backend(x)
@@ -166,8 +166,8 @@ def test_full_pipeline_no_ssl() -> None:
     """Compose backend + OC-Softmax on random "frontend" features, verify a
     training step reduces loss. SSL frontend skipped to keep test offline."""
     import torch
-    from voice_defense.defense.backend import AASIST
-    from voice_defense.defense.loss import OCSoftmaxLoss
+    from voice_defense.defense.aasist.backend import AASIST
+    from voice_defense.defense.aasist.loss import OCSoftmaxLoss
 
     torch.manual_seed(0)
     backend = AASIST(in_dim=32, gat_dim=16, n_subgraph_nodes=8, embed_dim=12)
@@ -207,7 +207,7 @@ def test_prompt_loader_robust() -> None:
       - empty file
       - one well-formed line + one malformed line
     """
-    from voice_defense.scripts.generate_attacks import _load_prompts
+    from voice_defense.scripts.run_generate_attacks import _load_prompts
 
     with tempfile.TemporaryDirectory() as td:
         td = Path(td)
@@ -249,8 +249,8 @@ def test_prompt_loader_robust() -> None:
 def test_orchestrator_determinism_and_manifest() -> None:
     """Same seed + same prompts must produce byte-identical outputs and a manifest."""
     import json as _json
-    from voice_defense.attack_zoo.base import DummyTTS
-    from voice_defense.attack_zoo.orchestrator import AttackOrchestrator
+    from voice_defense.attack.zoo.base import DummyTTS
+    from voice_defense.attack.zoo.orchestrator import AttackOrchestrator
 
     prompts = [{"text": f"prompt {i}"} for i in range(3)]
 
@@ -281,7 +281,7 @@ def test_orchestrator_determinism_and_manifest() -> None:
 
 
 def test_redteam_attack_builder() -> None:
-    from voice_defense.redteam.attack_system import (
+    from voice_defense.attack.redteam_system import (
         RedTeamAttackConfig,
         generate_redteam_submission,
     )

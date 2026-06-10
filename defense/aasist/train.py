@@ -19,14 +19,14 @@ import torch
 import yaml
 from torch.utils.data import DataLoader
 
-from ..data_pipeline import (
+from ...common import (
     ProtocolDataset,
     load_protocol,
     build_augmentation_chain,
 )
-from ..data_pipeline.augment import AugmentChainSpec
-from ..defense.model import SpoofDetector, SpoofDetectorConfig
-from ..evaluation.metrics import compute_eer
+from ...common.augment import AugmentChainSpec
+from .model import SpoofDetector, SpoofDetectorConfig
+from ...evaluation.metrics import compute_eer
 
 
 @dataclass

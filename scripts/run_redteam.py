@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import argparse
 
-from ..redteam.attack_system import RedTeamAttackConfig, generate_redteam_submission
+from ..attack.redteam_system import RedTeamAttackConfig, generate_redteam_submission
 
 
 def main() -> None:
