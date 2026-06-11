@@ -1,7 +1,19 @@
 # Voice Deepfake Attack & Defense Simulation
 
-음성 딥페이크 공격과 방어를 **동등한 모듈**로 구성하고,
-모의 실험 파이프라인으로 공격 성공률(ASR)과 방어 탐지율을 비교 분석하는 프로젝트.
+음성 딥페이크 **공격과 방어를 동등한 모듈**로 구현하고,
+모의 실험 파이프라인으로 공격 성공률(ASR)과 방어 탐지율을 자동 비교·분석하는 프로젝트.
+
+> 명령어 한 줄이면 공격 → 방어 → 분석 → 보고서까지 자동으로 돌아갑니다.
+
+## 무엇을 하는 프로젝트인가요?
+
+| | Red Team (공격) | Blue Team (방어) |
+|---|---|---|
+| **목표** | AI로 목소리를 복제해 화자 인증(ASV) 돌파 | 가짜 음성을 탐지해 차단 |
+| **핵심 기술** | XTTS v2 음성 복제 + ECAPA-TDNN 우회 | AASIST + LCNN + RawNet2 탐지기 |
+| **측정 지표** | ASR (공격 성공률) | EER (탐지 오류율) |
+
+공격과 방어를 동등하게 만들어 자동으로 붙여보고 결과를 리포트로 뽑아주는 것이 핵심.
 
 ## 구조
 
@@ -35,23 +47,10 @@
 │   ├── simulate.py             # 공격 → 방어 → 분석 → 보고서
 │   └── report.py               # Markdown 보고서 생성
 │
-├── common/                     # 공용 유틸리티
-│   ├── audio.py                # 오디오 I/O, 리샘플링, 트리밍
-│   ├── features.py             # LFCC, Mel-spectrogram 추출
-│   ├── redteam_data.py         # LibriSpeech, ASVspoof, ClonedVoice 데이터셋
-│   ├── augment.py              # RawBoost, 데이터 증강
-│   ├── dataset.py              # 프로토콜 기반 Dataset
-│   └── compat.py               # PyTorch 2.7+ / SpeechBrain 호환 패치
-│
-├── evaluation/                 # 평가 메트릭
-│   ├── metrics.py              # EER, min-tDCF, per-attack breakdown
-│   ├── eval_aasist.py          # AASIST 전용 평가
-│   └── report.py               # 프로토콜별 리포트
-│
-├── configs/                    # 설정 파일
-│   ├── simulation.yaml         # 전체 시뮬레이션 설정
-│   └── default.yaml            # AASIST 학습 설정
-│
+├── common/                     # 공용 유틸 (audio, features, dataset, augment, compat)
+├── evaluation/                 # 평가 메트릭 (EER, min-tDCF, per-attack breakdown)
+├── configs/                    # 설정 (simulation.yaml, default.yaml)
+├── docs/                       # 설계 문서 (asv_bypass_design.md 등)
 ├── protocols/                  # 평가 프로토콜 (seen/unseen/wild)
 ├── scripts/                    # CLI 진입점
 ├── tests/                      # smoke / 회귀 테스트
@@ -60,42 +59,40 @@
 
 ## 빠른 시작
 
-### 1. 환경 설치
-
 ```bash
+# 1. 환경 설치
 conda create -n deepfake python=3.10 -y
 conda activate deepfake
 pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu118
 pip install -r requirements.txt
-```
 
-### 2. 전체 시뮬레이션 실행
-
-```bash
+# 2. 전체 시뮬레이션 실행 (공격→방어→분석→보고서)
 python -m voice_defense.scripts.run_simulation --config configs/simulation.yaml
 ```
 
-이 명령 하나로:
+위 명령 하나로:
 1. **공격**: XTTS v2로 음성 복제 → ECAPA-TDNN 화자 인증 우회 → ASR 측정
 2. **방어**: LCNN/RawNet2로 딥페이크 탐지
 3. **분석**: 도메인 갭 (FID + t-SNE)
 4. **보고서**: `outputs/results/simulation_report.md` 생성
 
-### 3. 개별 실행
+### 개별 실행
 
 ```bash
-# 공격만
+# 공격만 (LibriSpeech 화자 복제)
 python -m voice_defense.scripts.run_clone_attack --config configs/simulation.yaml
 
-# 방어만
+# 커스텀 음성 공격 (팀원 목소리 등 직접 녹음 파일)
+python -m voice_defense.scripts.run_custom_attack --voice-dir data/custom_voices
+
+# 방어 (LCNN/RawNet2 학습·평가)
 python -m voice_defense.scripts.run_alt_defense --phase train
 python -m voice_defense.scripts.run_alt_defense --phase evaluate_clones
 
 # 공격 Zoo로 학습용 spoof 생성
 python -m voice_defense.scripts.run_generate_attacks \
     --prompts-jsonl data/prompts/train.jsonl \
-    --out-dir data/spoof_self/train \
-    --pipelines synthetic_tts --n-samples 50 --seed 42
+    --out-dir data/spoof_self/train --pipelines synthetic_tts --n-samples 50 --seed 42
 
 # AASIST 방어 모델 학습
 python -m voice_defense.scripts.train --config configs/default.yaml
@@ -107,22 +104,20 @@ python -m voice_defense.scripts.train --config configs/default.yaml
 ┌─────────────────────────────────────────────────────────────┐
 │                    pipeline/simulate.py                      │
 ├──────────────────────┬──────────────────────────────────────┤
-│                      │                                      │
-│  PHASE 1: ATTACK     │  PHASE 2: DEFENSE                   │
-│  ┌────────────────┐  │  ┌────────────────┐                 │
-│  │ attack/clone/  │  │  │ defense/aasist/ │ AASIST 탐지기  │
-│  │ XTTS v2 복제   │  │  ├────────────────┤                 │
-│  ├────────────────┤  │  │ defense/alt/    │ LCNN / RawNet2 │
-│  │ attack/verify/ │  │  └────────────────┘                 │
-│  │ ECAPA-TDNN ASR │  │                                      │
-│  └────────────────┘  │  PHASE 3: ANALYSIS                  │
-│                      │  ┌─────────────────────┐            │
-│                      │  │ defense/domain_gap/  │            │
-│                      │  │ FID + t-SNE          │            │
-│                      │  └─────────────────────┘            │
+│  PHASE 1: ATTACK     │  PHASE 2: DEFENSE                     │
+│  ┌────────────────┐  │  ┌────────────────┐                   │
+│  │ attack/clone/  │  │  │ defense/aasist/ │ AASIST 탐지기    │
+│  │ XTTS v2 복제   │  │  ├────────────────┤                   │
+│  ├────────────────┤  │  │ defense/alt/    │ LCNN / RawNet2   │
+│  │ attack/verify/ │  │  └────────────────┘                   │
+│  │ ECAPA-TDNN ASR │  │                                       │
+│  └────────────────┘  │  PHASE 3: ANALYSIS                    │
+│                      │  ┌─────────────────────┐              │
+│                      │  │ defense/domain_gap/  │ FID + t-SNE  │
+│                      │  └─────────────────────┘              │
 ├──────────────────────┴──────────────────────────────────────┤
-│  PHASE 4: REPORT                                            │
-│  pipeline/report.py → outputs/results/simulation_report.md  │
+│  PHASE 4: REPORT                                             │
+│  pipeline/report.py → outputs/results/simulation_report.md   │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -156,11 +151,22 @@ python -m voice_defense.scripts.train --config configs/default.yaml
 | `wild` | In-the-Wild + 외부 데이터 | 실전 일반화 |
 | `redteam` | Red Team 제출 wav | 본 평가 |
 
+## 설계 문서
+
+- [docs/asv_bypass_design.md](docs/asv_bypass_design.md) — ASV 우회 공격 연결 설계 (trial 프로토콜 / ASV 임계값 보정 / tandem 평가 / 공격×방어 매핑)
+
 ## 요구 사항
 
 - Python 3.10
 - CUDA GPU (4-6GB VRAM 이상)
 - ~10GB 디스크 (데이터셋 + 모델)
+
+## 브랜치
+
+| 브랜치 | 설명 |
+|--------|------|
+| `main` | 통합 최신본 |
+| `attack` | 공격-방어 통합 작업 브랜치 |
 
 ## 라이선스
 
