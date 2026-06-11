@@ -162,6 +162,24 @@ python -m voice_defense.scripts.train --config configs/default.yaml
 - CUDA GPU (4-6GB VRAM 이상)
 - ~10GB 디스크 (데이터셋 + 모델)
 
+## 진행 상황 / 남은 작업
+
+ASV 우회 시나리오(특정인 복제 → 화자인증 통과)를 학술적으로 성립시키기 위한
+연결 모듈을 추가하는 중. 설계 근거는 `docs/asv_bypass_design.md` 참고.
+
+### 완료
+- [x] `common/trial_protocol.py` — 4분류 trial(enrollment / genuine / impostor / spoof) 생성. 화자 분리 원칙, seed 재현성, CSV·JSON 직렬화.
+- [x] `attack/verify/calibrate.py` — genuine vs zero-effort impostor로 ASV의 **EER 운영점 임계값** 산출. 임의 sweep 대신 보정된 임계값에서 ASR 측정.
+- [x] `pipeline/tandem.py` — 복제본을 ASV·CM에 동시 통과시켜 4사분면 집계, 핵심 지표 `asr_asv` / `asr_tandem` 산출.
+- [x] 위 3개 모듈 스모크 테스트(모델 없이 합성 데이터로 검증) — `tests/test_smoke.py`.
+
+### 남은 작업 (TODO)
+- [ ] **공격×방어 매핑 리포트** — `pipeline/report.py` 확장. 행=공격 벡터(xtts, rvc, +codec, +PGD), 열=방어(ASV단독 / LCNN / RawNet2 / AASIST / tandem), 셀=ASR. 가장 취약한 (공격, 방어) 쌍 자동 하이라이트.
+- [ ] **CLI 진입점** — `scripts/run_asv_bypass.py`. trial 생성 → ASV 보정 → tandem 평가 → 리포트를 한 줄로 연결.
+- [ ] **README ↔ 코드 정합성** — README가 가리키는 `run_clone_attack.py` / `run_alt_defense.py`가 실제 `scripts/`에 없음. 스크립트를 만들거나 README를 실존 스크립트(`run_simulation`, `run_custom_attack`, `run_redteam`)에 맞게 수정.
+- [ ] **브랜치 정리** — `main`은 옛 구조. `attack`을 `main`으로 머지하거나 `main`에 안내 명시.
+- [ ] **실측 결과 생성** — XTTS(~2GB) / speechbrain ECAPA / WavLM+AASIST / ASVspoof2019 내려받아 1회 실행, 결과 figure·표 커밋. (`requirements.txt`의 주석 처리된 `TTS`, `speechbrain` 의존성 활성화 필요.)
+
 ## 라이선스
 
 연구·교육 목적. 공격 zoo의 각 모델은 원 라이선스를 따름.
