@@ -12,7 +12,7 @@ Example:
 from __future__ import annotations
 import argparse
 
-from ..evaluation.evaluate import evaluate_checkpoint
+from ..evaluation.eval_aasist import evaluate_checkpoint
 from ..evaluation.report import write_report
 
 

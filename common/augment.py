@@ -20,9 +20,9 @@ from scipy import signal as scisig
 
 # Reuse post-processors as augmentations (post_process is sample-time;
 # augment is train-time but semantically identical).
-from ..attack_zoo.post_process.codec import CodecPostProcessor
-from ..attack_zoo.post_process.room_ir import RoomIRPostProcessor
-from ..attack_zoo.post_process.noise_mix import NoisePostProcessor
+from ..attack.zoo.post_process.codec import CodecPostProcessor
+from ..attack.zoo.post_process.room_ir import RoomIRPostProcessor
+from ..attack.zoo.post_process.noise_mix import NoisePostProcessor
 
 
 # ============================================================== RawBoost

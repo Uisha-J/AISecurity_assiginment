@@ -175,9 +175,9 @@ def run(workdir: Path) -> dict:
     )
 
     # 2. Build a tiny model (no SSL) ------------------------------------
-    from voice_defense.defense.backend import AASIST
-    from voice_defense.defense.loss import OCSoftmaxLoss
-    from voice_defense.data_pipeline.dataset import (
+    from voice_defense.defense.aasist.backend import AASIST
+    from voice_defense.defense.aasist.loss import OCSoftmaxLoss
+    from voice_defense.common.dataset import (
         load_protocol, ProtocolDataset,
     )
 

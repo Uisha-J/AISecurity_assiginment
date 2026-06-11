@@ -15,8 +15,8 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 
-from ..data_pipeline import ProtocolDataset, load_protocol
-from ..defense.model import SpoofDetector, SpoofDetectorConfig
+from ..common import ProtocolDataset, load_protocol
+from ..defense.aasist.model import SpoofDetector, SpoofDetectorConfig
 from .metrics import compute_eer, compute_min_tdcf, attack_breakdown
 
 

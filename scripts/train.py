@@ -7,7 +7,7 @@ Example:
 from __future__ import annotations
 import argparse
 
-from ..training.train import TrainArgs, train_one_run
+from ..defense.aasist.train import TrainArgs, train_one_run
 
 
 def main() -> None:
