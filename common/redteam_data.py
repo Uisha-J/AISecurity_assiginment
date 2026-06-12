@@ -30,6 +30,10 @@ class LibriSpeechSpeakerDataset:
 
 
 class ASVspoofDataset(Dataset):
+    """ASVspoof2019 LA dataset.
+
+    Label convention (project-wide): 1 == bonafide, 0 == spoof.
+    """
     def __init__(self, data_root, split="train", feature_type="lfcc", max_audio_len=64000, n_lfcc=60):
         self.feature_type, self.max_audio_len, self.n_lfcc = feature_type, max_audio_len, n_lfcc
         root = Path(data_root)
@@ -42,7 +46,7 @@ class ASVspoofDataset(Dataset):
         with open(root / "ASVspoof2019_LA_cm_protocols" / pfile) as f:
             for line in f:
                 p = line.strip().split()
-                self.samples.append({"audio_path": str(self.audio_dir / f"{p[1]}.flac"), "label": 0 if p[4] == "bonafide" else 1})
+                self.samples.append({"audio_path": str(self.audio_dir / f"{p[1]}.flac"), "label": 1 if p[4] == "bonafide" else 0})
 
     def __len__(self): return len(self.samples)
 
@@ -62,9 +66,13 @@ class ASVspoofDataset(Dataset):
 
 
 class ClonedVoiceDataset(Dataset):
+    """Real vs. cloned-voice pairs.
+
+    Label convention (project-wide): 1 == bonafide (real), 0 == spoof (cloned).
+    """
     def __init__(self, real_paths, cloned_paths, feature_type="lfcc", max_audio_len=64000, n_lfcc=60):
         self.feature_type, self.max_audio_len, self.n_lfcc = feature_type, max_audio_len, n_lfcc
-        self.samples = [{"audio_path": p, "label": 0} for p in real_paths] + [{"audio_path": p, "label": 1} for p in cloned_paths]
+        self.samples = [{"audio_path": p, "label": 1} for p in real_paths] + [{"audio_path": p, "label": 0} for p in cloned_paths]
 
     def __len__(self): return len(self.samples)
 

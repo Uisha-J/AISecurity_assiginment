@@ -35,26 +35,33 @@ def detect_single(audio_path, model, model_type, device="cuda", max_len=64000, n
         feat = torch.from_numpy(wav).float().unsqueeze(0).to(device)
     with torch.no_grad():
         p = torch.softmax(model(feat), dim=1).squeeze()
-    return {"prediction": p.argmax().item(), "bonafide_score": p[0].item(), "spoof_score": p[1].item()}
+    # Label convention: 1 == bonafide, 0 == spoof. So class index 1 == bonafide.
+    # prediction == 1 means "predicted bonafide".
+    return {"prediction": p.argmax().item(), "bonafide_score": p[1].item(), "spoof_score": p[0].item()}
 
 
 def evaluate_on_clones(checkpoint_path, cloned_paths, real_paths, output_root, device="cuda"):
     model, mtype = load_alt_detector(checkpoint_path, device)
     results = []
+    # Label convention: 1 == bonafide, 0 == spoof. Clones are spoof (0); references are bonafide (1).
     for p in tqdm(cloned_paths, desc="Detecting clones"):
         r = detect_single(p, model, mtype, device)
-        r.update(audio_path=p, true_label=1)
+        r.update(audio_path=p, true_label=0)
         results.append(r)
     for p in tqdm(real_paths, desc="Detecting real"):
         r = detect_single(p, model, mtype, device)
-        r.update(audio_path=p, true_label=0)
+        r.update(audio_path=p, true_label=1)
         results.append(r)
     df = pd.DataFrame(results)
     Path(output_root, "results").mkdir(parents=True, exist_ok=True)
     df.to_csv(Path(output_root) / "results" / "alt_detector_eval.csv", index=False)
+    # compute_eer(scores, labels): scores higher == bonafide, labels 1 == bonafide.
+    eer, _ = compute_eer(df["bonafide_score"].values, df["true_label"].values)
     return {
         "accuracy": (df["prediction"].values == df["true_label"].values).mean(),
-        "eer": compute_eer(df["true_label"].values, df["spoof_score"].values),
-        "clone_detection_rate": (df[df["true_label"] == 1]["prediction"] == 1).mean(),
-        "false_rejection_rate": (df[df["true_label"] == 0]["prediction"] == 1).mean(),
+        "eer": eer,
+        # clone (spoof, label 0) correctly flagged as spoof (prediction 0)
+        "clone_detection_rate": (df[df["true_label"] == 0]["prediction"] == 0).mean(),
+        # reference (bonafide, label 1) wrongly flagged as spoof (prediction 0)
+        "false_rejection_rate": (df[df["true_label"] == 1]["prediction"] == 0).mean(),
     }

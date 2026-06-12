@@ -42,6 +42,8 @@ desktop.ini
 
 # Project artifacts
 _demo_run/
+outputs/
+results/
 checkpoints/
 reports/
 *.pt

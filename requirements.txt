@@ -19,16 +19,6 @@ pandas>=2.0
 # Augmentation
 pyloudnorm>=0.1.1
 
-# Optional: attack zoo (install on demand)
-# TTS                # Coqui XTTS
-# openvoice          # OpenVoice
-# bark               # Suno Bark
-# RVC dependencies   # see attack_zoo/vc/rvc.py for setup
-
-# Optional: codec / RIR
-# pyrubberband
-# pesq
-
 # Visualization
 seaborn>=0.12
 
@@ -36,8 +26,20 @@ seaborn>=0.12
 click>=8.1
 rich>=13.0
 
-# Speaker verification (red-team ASR)
-# speechbrain>=0.5.16       # install on demand
-
-# Demo (mic recording)
-# pyaudio>=0.2.14           # install on demand
+# =====================================================================
+# OPTIONAL — only needed for REAL model runs (heavy installs / GPU).
+# The smoke tests (tests/test_smoke.py) and synthetic-data runs work
+# WITHOUT any of these. Install the ones you need:
+#
+#   # Speaker verification (real ASR against ECAPA-TDNN):
+#   pip install speechbrain>=0.5.16
+#
+#   # Voice cloning attack zoo:
+#   pip install TTS            # Coqui XTTS v2  (primary cloner)
+#   pip install openvoice      # OpenVoice
+#   pip install bark           # Suno Bark
+#   # RVC / seed-vc: see attack/zoo/vc/rvc.py and seed_vc.py for setup
+#
+#   # Post-processing / mic demo:
+#   pip install pyrubberband pesq pyaudio>=0.2.14
+# =====================================================================

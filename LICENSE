@@ -1,0 +1,33 @@
+Voice Deepfake Attack & Defense Simulation
+Copyright (c) 2026 The project authors
+
+RESEARCH AND EDUCATIONAL USE LICENSE
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to use,
+copy, modify, and distribute the Software SOLELY for non-commercial research
+and educational purposes, subject to the following conditions:
+
+1. The above copyright notice and this permission notice shall be included in
+   all copies or substantial portions of the Software.
+
+2. The Software generates and analyzes synthetic ("deepfake") speech. It is
+   intended only for authorized security research, anti-spoofing development,
+   and education. It must NOT be used to impersonate any person without their
+   explicit, informed consent, nor for fraud, harassment, or any unlawful
+   purpose. Users are solely responsible for complying with all applicable
+   laws and for obtaining consent for any voice they clone.
+
+3. Third-party models invoked by the attack zoo and defense modules (e.g.
+   XTTS, OpenVoice, Bark, Tortoise, RVC, seed-vc, WavLM, AASIST, ECAPA-TDNN,
+   SpeechBrain) are distributed under their own licenses. See
+   THIRD_PARTY_LICENSES.md. You must comply with each model's license when you
+   download and use it.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

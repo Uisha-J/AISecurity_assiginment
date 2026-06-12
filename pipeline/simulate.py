@@ -26,8 +26,11 @@ def run_simulation(config_path="configs/simulation.yaml", data_root="./data", ou
     with open(config_path) as f:
         cfg = yaml.safe_load(f)
 
-    results_dir = Path(output_root) / "results"
-    results_dir.mkdir(parents=True, exist_ok=True)
+    # Create all output subdirs up front so later phases never silently fail on a missing path.
+    out_root = Path(output_root)
+    results_dir = out_root / "results"
+    for sub in (results_dir, out_root / "cloned_audio", out_root / "models"):
+        sub.mkdir(parents=True, exist_ok=True)
 
     report = {}
 
@@ -70,30 +73,44 @@ def run_simulation(config_path="configs/simulation.yaml", data_root="./data", ou
     cloned_paths = sorted(glob(f"{output_root}/cloned_audio/**/clone_*.wav", recursive=True))
     real_paths = sorted(glob(f"{output_root}/cloned_audio/**/ref_*.wav", recursive=True))
 
+    if not cloned_paths:
+        logger.warning(
+            "No cloned audio found under %s/cloned_audio (clone_*.wav). The attack phase "
+            "produced nothing — XTTS likely not installed or no target speakers. "
+            "Defense/analysis phases will be skipped.", output_root)
+
     def_cfg = cfg.get("defense", {})
 
     # 2a. Alternative detector (LCNN / RawNet2)
     if def_cfg.get("alt_detector", {}).get("enabled", True):
-        asvspoof_root = str(Path(data_root) / "asvspoof2019")
+        asvspoof_root = Path(data_root) / "asvspoof2019"
+        train_proto = asvspoof_root / "ASVspoof2019_LA_cm_protocols" / "ASVspoof2019.LA.cm.train.trn.txt"
         alt_cfg = def_cfg["alt_detector"]
 
-        from ..defense.alt.train import train_alt_detector
-        from ..defense.alt.detector import evaluate_on_clones
+        if not train_proto.exists():
+            logger.warning(
+                "ASVspoof2019 not found at %s — skipping alt-detector training. "
+                "Download it via scripts/download_data.py.", asvspoof_root)
+        elif not (cloned_paths and real_paths):
+            logger.warning("No cloned/reference audio to evaluate — skipping alt-detector.")
+        else:
+            from ..defense.alt.train import train_alt_detector
+            from ..defense.alt.detector import evaluate_on_clones
 
-        logger.info("Training alternative detector...")
-        train_result = train_alt_detector(
-            asvspoof_root, output_root,
-            model_type=alt_cfg.get("model_type", "lcnn"),
-            epochs=alt_cfg.get("epochs", 30),
-            device=cfg.get("device", "cuda"),
-        )
+            logger.info("Training alternative detector...")
+            train_result = train_alt_detector(
+                str(asvspoof_root), output_root,
+                model_type=alt_cfg.get("model_type", "lcnn"),
+                epochs=alt_cfg.get("epochs", 30),
+                device=cfg.get("device", "cuda"),
+            )
 
-        logger.info("Evaluating on cloned voices...")
-        det_metrics = evaluate_on_clones(
-            train_result["best_model_path"], cloned_paths, real_paths, output_root,
-            device=cfg.get("device", "cuda"),
-        )
-        report["defense_alt"] = det_metrics
+            logger.info("Evaluating on cloned voices...")
+            det_metrics = evaluate_on_clones(
+                train_result["best_model_path"], cloned_paths, real_paths, output_root,
+                device=cfg.get("device", "cuda"),
+            )
+            report["defense_alt"] = det_metrics
 
     # ================================================================ PHASE 3: ANALYSIS
     logger.info("=" * 60)

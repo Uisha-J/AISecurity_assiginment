@@ -50,9 +50,12 @@ def train_alt_detector(data_root, output_root, model_type="lcnn", feature_type="
         sc, lb_all = [], []
         with torch.no_grad():
             for f, lb in dev_dl:
+                # Label convention: 1 == bonafide, 0 == spoof (matches evaluation/metrics.py).
+                # Class index 1 == bonafide, so softmax[:, 1] == P(bonafide) (higher == bonafide).
                 sc.extend(torch.softmax(model(f.to(device)), 1)[:, 1].cpu().numpy())
                 lb_all.extend(lb.numpy())
-        val_eer = compute_eer(lb_all, sc)
+        # compute_eer signature is (scores, labels) and returns (eer, threshold).
+        val_eer, _ = compute_eer(sc, lb_all)
         scheduler.step()
         logger.info(f"Epoch {epoch+1}: Loss={loss_sum/len(train_dl):.4f} EER={val_eer:.4f}")
 
