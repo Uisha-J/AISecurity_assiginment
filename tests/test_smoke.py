@@ -409,6 +409,53 @@ def test_tandem_eval() -> None:
           f"asr_tandem={res.asr_tandem:.2f}  OK")
 
 
+def test_asv_mapping_report() -> None:
+    from voice_defense.pipeline.report import generate_asv_mapping_report
+    from voice_defense.pipeline.tandem import TandemResult
+
+    # Mix a TandemResult object and plain dicts to exercise both input paths.
+    entries = [
+        {"attack": "xtts", "defense": "LCNN",
+         "result": TandemResult(n=10, asv_threshold=0.5, cm_threshold=0.5,
+                                asr_asv=1.0, asr_cm_evade=0.7, asr_tandem=0.7)},
+        {"attack": "xtts", "defense": "AASIST", "result": {"asr_asv": 1.0, "asr_tandem": 0.1}},
+        {"attack": "rvc", "defense": "LCNN", "result": {"asr_asv": 0.8, "asr_tandem": 0.3}},
+        {"attack": "rvc", "defense": "AASIST", "result": {"asr_asv": 0.8, "asr_tandem": 0.0}},
+    ]
+    calib = {"eer": 0.05, "threshold_at_eer": 0.27, "n_genuine": 18, "n_impostor": 30}
+
+    with tempfile.TemporaryDirectory() as d:
+        path = generate_asv_mapping_report(entries, calib, output_root=d)
+        text = Path(path).read_text(encoding="utf-8")
+        assert Path(path).name == "asv_mapping_report.md"
+        # rows, cols, cells rendered
+        for tok in ("xtts", "rvc", "LCNN", "AASIST", "ASV 단독", "%"):
+            assert tok in text, tok
+        # most-vulnerable cell (xtts×LCNN = 0.7) highlighted
+        assert "★" in text
+        assert "70.0%" in text
+        # summary identifies AASIST as strongest defense (lowest mean tandem)
+        assert "AASIST" in text.split("요약")[1]
+    print("[asv-bypass] mapping report renders matrix + highlights  OK")
+
+
+def test_run_asv_bypass_demo() -> None:
+    import json as _json
+    from voice_defense.scripts.run_asv_bypass import run_demo
+
+    with tempfile.TemporaryDirectory() as d:
+        run_demo(d, seed=42)
+        for art in ("protocol.csv", "calibration.json", "tandem.json"):
+            assert (Path(d) / art).exists(), art
+        assert (Path(d) / "results" / "asv_mapping_report.md").exists()
+        rows = _json.loads((Path(d) / "tandem.json").read_text(encoding="utf-8"))
+        assert rows, "tandem.json empty"
+        # core invariant: combined bypass never easier than ASV alone
+        for r in rows:
+            assert r["asr_tandem"] <= r["asr_asv"] + 1e-9
+    print(f"[asv-bypass] run_asv_bypass demo produced artifacts over {len(rows)} cells  OK")
+
+
 def main() -> int:
     print("== voice_defense smoke tests ==")
     tests = [
@@ -426,6 +473,8 @@ def main() -> int:
         test_trial_protocol_build,
         test_calibrate_asv_eer,
         test_tandem_eval,
+        test_asv_mapping_report,
+        test_run_asv_bypass_demo,
     ]
     failed = 0
     for t in tests:
