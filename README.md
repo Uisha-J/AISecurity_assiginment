@@ -205,6 +205,25 @@ python -m voice_defense.scripts.download_data --datasets librispeech_devclean mu
 |--------|------|
 | `main` | 통합 최신본 |
 | `attack` | 공격-방어 통합 작업 브랜치 |
+| `asv-bypass` | ASV 우회 연결 모듈(trial/calibrate/tandem) — 통합본에 머지됨 |
+
+## 진행 상황 / 남은 작업
+
+ASV 우회 시나리오(특정인 복제 → 화자인증 통과)를 학술적으로 성립시키는 연결 모듈.
+설계 근거는 `docs/asv_bypass_design.md` 참고.
+
+### 완료
+- [x] `common/trial_protocol.py` — 4분류 trial(enrollment / genuine / impostor / spoof) 생성. 화자 분리 원칙, seed 재현성, CSV·JSON 직렬화.
+- [x] `attack/verify/calibrate.py` — genuine vs zero-effort impostor로 ASV의 **EER 운영점 임계값** 산출. 임의 sweep 대신 보정된 임계값에서 ASR 측정.
+- [x] `pipeline/tandem.py` — 복제본을 ASV·CM에 동시 통과시켜 4사분면 집계, 핵심 지표 `asr_asv` / `asr_tandem` 산출.
+- [x] **공격×방어 매핑 리포트** — `pipeline/report.py`의 `generate_asv_mapping_report()`.
+- [x] **CLI 진입점** — `scripts/run_asv_bypass.py` (trial → ASV 보정 → tandem → 리포트, 합성 데이터로도 동작).
+- [x] **README ↔ 코드 정합성** — 없는 스크립트 참조 제거, 실존 스크립트로 정리.
+- [x] **alt 탐지기 정확성 버그 수정** — `compute_eer` 인자 순서·튜플 언패킹, 라벨 규약(1=bonafide) 통일.
+- [x] 스모크 테스트(모델 없이 합성 데이터로 검증) — `tests/test_smoke.py`.
+
+### 남은 작업 (TODO)
+- [ ] **실측 결과 생성** — XTTS(~2GB) / speechbrain ECAPA / WavLM+AASIST / ASVspoof2019 내려받아 1회 실행, 결과 figure·표 커밋. GPU 환경 필요. (optional 의존성 설치: `requirements.txt` 하단 OPTIONAL 섹션 참고.)
 
 ## 라이선스
 

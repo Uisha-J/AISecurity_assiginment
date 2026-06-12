@@ -307,6 +307,108 @@ def test_redteam_attack_builder() -> None:
         print("[redteam] attack builder wrote submission artifacts  OK")
 
 
+
+# --------------------------------------------------------------------------
+# ASV-bypass modules: trial protocol, ASV calibration, tandem evaluation.
+# All run on synthetic paths + mock score functions (no audio, no models).
+# --------------------------------------------------------------------------
+def test_trial_protocol_build() -> None:
+    from voice_defense.common.trial_protocol import (
+        build_trial_protocol, TrialSet, KIND_GENUINE, KIND_IMPOSTOR, KIND_SPOOF,
+    )
+
+    utts = {f"spk{s}": [f"spk{s}/u{u}.wav" for u in range(4)] for s in range(5)}
+    clones = {f"spk{s}": [f"clone/spk{s}_c{c}.wav" for c in range(2)] for s in range(5)}
+
+    ts = build_trial_protocol(
+        utts, clones, seed=0,
+        n_genuine_per_speaker=2, n_impostor_per_speaker=3,
+    )
+    summ = ts.summary()
+    assert summ["n_enrolled_speakers"] == 5
+    assert summ["n_genuine"] == 5 * 2
+    assert summ["n_impostor"] == 5 * 3
+    assert summ["n_spoof"] == 5 * 2
+
+    # speaker disjointness: impostor test speaker != enrolled victim
+    for t in ts.impostor():
+        assert t.test_speaker != t.target_speaker
+    # genuine / spoof tests belong to the victim
+    for t in ts.genuine() + ts.spoof():
+        assert t.test_speaker == t.target_speaker
+    # ASV ground truth labels
+    assert all(t.asv_target == 1 for t in ts.genuine())
+    assert all(t.asv_target == 0 for t in ts.impostor() + ts.spoof())
+
+    # determinism
+    ts2 = build_trial_protocol(utts, clones, seed=0,
+                               n_genuine_per_speaker=2, n_impostor_per_speaker=3)
+    assert [t.test_path for t in ts.trials] == [t.test_path for t in ts2.trials]
+
+    # CSV round-trip
+    with tempfile.TemporaryDirectory() as d:
+        csv_path = Path(d) / "protocol.csv"
+        ts.to_csv(csv_path)
+        ts_rt = TrialSet.from_csv(csv_path)
+        assert len(ts_rt.trials) == len(ts.trials)
+        assert ts_rt.summary() == ts.summary()
+    print("[asv-bypass] trial protocol build + disjointness + roundtrip  OK")
+
+
+def test_calibrate_asv_eer() -> None:
+    from voice_defense.common.trial_protocol import build_trial_protocol
+    from voice_defense.attack.verify.calibrate import calibrate_asv
+
+    utts = {f"spk{s}": [f"spk{s}/u{u}.wav" for u in range(5)] for s in range(6)}
+    ts = build_trial_protocol(utts, seed=1,
+                              n_genuine_per_speaker=4, n_impostor_per_speaker=4)
+
+    # Mock ASV: same-speaker pairs score high, cross-speaker low (clean separation).
+    def score_fn(enroll, test):
+        same = enroll.split("/")[0] == test.split("/")[0]
+        return 0.8 if same else 0.1
+
+    res = calibrate_asv(ts, score_fn)
+    assert res.n_genuine > 0 and res.n_impostor > 0
+    assert res.eer == 0.0                         # perfectly separable
+    assert 0.1 <= res.threshold <= 0.8            # operating point within score range
+    assert res.to_dict()["genuine_mean"] > res.to_dict()["impostor_mean"]
+    print(f"[asv-bypass] calibrate EER={res.eer:.3f} thr={res.threshold:.3f}  OK")
+
+
+def test_tandem_eval() -> None:
+    from voice_defense.common.trial_protocol import Trial, KIND_SPOOF
+    from voice_defense.pipeline.tandem import (
+        evaluate_tandem, Q_FULL_BYPASS, Q_CM_DEFENDS, Q_CM_ONLY, Q_BOTH_DEFEND,
+    )
+
+    # 10 spoof trials; encode the intended outcome in the filename.
+    # asv_accept when "hi" in path; cm_detect when "det" in path.
+    trials = []
+    plan = (["hi_det"] * 2 + ["hi_evade"] * 4 + ["lo_det"] * 1 + ["lo_evade"] * 3)
+    for i, tag in enumerate(plan):
+        trials.append(Trial(f"enroll/v.wav", f"clone/{tag}_{i}.wav", "v", "v", KIND_SPOOF))
+
+    asv = lambda e, t: 0.9 if "hi" in t else 0.1
+    cm = lambda t: 0.9 if "det" in t else 0.1   # spoofness; high == detected
+
+    res = evaluate_tandem(trials, asv, asv_threshold=0.5, cm_score_fn=cm, cm_threshold=0.5)
+
+    assert res.n == 10
+    # quadrants partition the trials
+    assert sum(res.counts.values()) == 10
+    assert res.counts[Q_FULL_BYPASS] == 4        # hi_evade
+    assert res.counts[Q_CM_DEFENDS] == 2         # hi_det
+    assert res.counts[Q_CM_ONLY] == 3            # lo_evade
+    assert res.counts[Q_BOTH_DEFEND] == 1        # lo_det
+    # metrics
+    assert abs(res.asr_asv - 0.6) < 1e-9         # 6 accepted by ASV
+    assert abs(res.asr_tandem - 0.4) < 1e-9      # 4 full bypass
+    assert res.asr_tandem <= res.asr_asv         # tandem never easier than ASV alone
+    print(f"[asv-bypass] tandem asr_asv={res.asr_asv:.2f} "
+          f"asr_tandem={res.asr_tandem:.2f}  OK")
+
+
 def main() -> int:
     print("== voice_defense smoke tests ==")
     tests = [
@@ -321,6 +423,9 @@ def main() -> int:
         test_aasist_backend_shape,
         test_full_pipeline_no_ssl,
         test_redteam_attack_builder,
+        test_trial_protocol_build,
+        test_calibrate_asv_eer,
+        test_tandem_eval,
     ]
     failed = 0
     for t in tests:
