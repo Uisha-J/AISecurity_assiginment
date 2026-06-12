@@ -46,6 +46,7 @@ def run_simulation(config_path="configs/simulation.yaml", data_root="./data", ou
     atk_cfg = cfg.get("attack", {})
     clone_result = clone_voices_experiment(
         data_root=data_root, output_root=output_root,
+        librispeech_subset=atk_cfg.get("librispeech_subset", "test-clean"),
         num_target_speakers=atk_cfg.get("num_target_speakers", 20),
         sample_durations=atk_cfg.get("sample_durations", [5, 10, 30]),
         texts=atk_cfg.get("texts"),

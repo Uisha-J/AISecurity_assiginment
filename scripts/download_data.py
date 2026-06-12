@@ -49,6 +49,16 @@ DATASETS: dict[str, Dataset] = {
         extract="tar.gz",
         note="Small bonafide test set. Best starter.",
     ),
+    "librispeech_testclean": Dataset(
+        name="LibriSpeech test-clean",
+        url="https://www.openslr.org/resources/12/test-clean.tar.gz",
+        target_dir=DATA_ROOT / "bonafide" / "librispeech_testclean",
+        size_mb=378,
+        access="public",
+        extract="tar.gz",
+        note="Default subset for the cloning attack. NOTE: for run_simulation, "
+             "use scripts/setup_data.py which places it at <data-root>/librispeech/.",
+    ),
     "librispeech_train100": Dataset(
         name="LibriSpeech train-clean-100",
         url="https://www.openslr.org/resources/12/train-clean-100.tar.gz",
