@@ -76,3 +76,4 @@ wandb/
 data/librispeech/
 data/asvspoof2019/
 data/custom_voices/*.wav
+pretrained_models/

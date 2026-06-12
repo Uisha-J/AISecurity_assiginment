@@ -50,6 +50,35 @@ def patch_speechbrain_lazy():
         pass
 
 
+def patch_symlink_fallback_copy():
+    """Make Path.symlink_to fall back to copy when symlinks aren't permitted.
+
+    SpeechBrain 1.x links cached HF files into the savedir with
+    ``dst.symlink_to(src)``, which raises WinError 1314 on Windows without admin
+    / Developer Mode. Patching at the pathlib level guarantees the fallback no
+    matter which SpeechBrain code path calls it, and only changes behaviour when
+    the symlink actually fails.
+    """
+    try:
+        import pathlib
+        import shutil
+        _orig_symlink = pathlib.Path.symlink_to
+
+        def _symlink_or_copy(self, target, target_is_directory=False):
+            try:
+                return _orig_symlink(self, target, target_is_directory)
+            except OSError:
+                src = pathlib.Path(target)
+                if src.is_dir():
+                    shutil.copytree(str(src), str(self), dirs_exist_ok=True)
+                else:
+                    shutil.copy(str(src), str(self))
+
+        pathlib.Path.symlink_to = _symlink_or_copy
+    except Exception:
+        pass
+
+
 def apply_all_patches():
     _original = torch.load
     def _patched(*a, **kw):
@@ -59,6 +88,7 @@ def apply_all_patches():
 
     patch_torchaudio_soundfile()
     patch_speechbrain_lazy()
+    patch_symlink_fallback_copy()
 
     try:
         import importlib
