@@ -1,0 +1,16 @@
+{
+  "n_speakers": 20,
+  "n_spoof_trials": 60,
+  "asv_eer": 0.01833333333333334,
+  "asv_threshold": 0.26435530185699463,
+  "cm_threshold": 0.34305110573768616,
+  "asr_asv": 0.9333333333333333,
+  "asr_cm_evade": 0.0,
+  "asr_tandem": 0.0,
+  "quadrants": {
+    "full_bypass": 0,
+    "cm_defends": 56,
+    "cm_only_would_fail": 0,
+    "both_defended": 4
+  }
+}

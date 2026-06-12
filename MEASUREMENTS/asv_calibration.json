@@ -1,0 +1,8 @@
+{
+  "eer": 0.01833333333333334,
+  "threshold_at_eer": 0.26435530185699463,
+  "n_genuine": 60,
+  "n_impostor": 100,
+  "genuine_mean": 0.6409825111428896,
+  "impostor_mean": 0.07289705676026642
+}

@@ -1,0 +1,47 @@
+{
+  "attacks": [
+    "xtts",
+    "synthetic_tts",
+    "artifact_vc"
+  ],
+  "n_speakers": 20,
+  "n_clones_per_attack": {
+    "xtts": 60,
+    "synthetic_tts": 60,
+    "artifact_vc": 60
+  },
+  "matrix": {
+    "xtts": {
+      "xtts": 1.0,
+      "synthetic_tts": 0.0,
+      "artifact_vc": 0.7166666666666667
+    },
+    "synthetic_tts": {
+      "xtts": 0.3333333333333333,
+      "synthetic_tts": 1.0,
+      "artifact_vc": 1.0
+    },
+    "artifact_vc": {
+      "xtts": 0.0,
+      "synthetic_tts": 0.5166666666666667,
+      "artifact_vc": 1.0
+    }
+  },
+  "diag_info": {
+    "xtts": {
+      "dev_eer": 0.0,
+      "cm_threshold": 0.18496926128864288,
+      "frr_on_real": 0.05
+    },
+    "synthetic_tts": {
+      "dev_eer": 0.0,
+      "cm_threshold": 0.3188551962375641,
+      "frr_on_real": 0.05
+    },
+    "artifact_vc": {
+      "dev_eer": 0.0,
+      "cm_threshold": 0.5147398710250854,
+      "frr_on_real": 0.05
+    }
+  }
+}
