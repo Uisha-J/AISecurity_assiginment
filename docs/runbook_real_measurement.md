@@ -56,11 +56,14 @@ unzip LA.zip -d /tmp/la && mkdir -p ./data/asvspoof2019 && cp -r /tmp/la/LA/* ./
 
 ---
 
-## STEP 2 — 긴 실행 전에 레이아웃 검증 (<1분, 모든 "조용한 스킵" 사전 차단)
+## STEP 2 — 긴 실행 전에 환경+데이터 일괄 점검 (<1분, 모든 "조용한 스킵"·중도 실패 사전 차단)
 
 ```bash
-python -m voice_defense.scripts.setup_data --data-root ./data --skip-librispeech
-#  요약에서 LibriSpeech=OK, ASVspoof2019=OK 두 줄이 나와야 함. MISSING이면 STEP 1로.
+python -m voice_defense.scripts.preflight --data-root ./data
+#  Python/torch/CUDA/VRAM, TTS·speechbrain 설치, LibriSpeech·ASVspoof 경로를 한 번에 점검.
+#  [FAIL] 이 하나도 없어야 STEP 3 진행. [WARN]은 의미 확인:
+#   - CUDA WARN  -> GPU 없음(매우 느림)
+#   - ASVspoof WARN -> 방어(LCNN)·도메인갭 단계가 스킵됨(공격 ASR만 나옴) → 풀 벤치마크면 STEP 1b 완료 필요
 ```
 
 ---
