@@ -217,6 +217,22 @@ def _fetch_one(key: str) -> None:
     print(f"  [done] -> {d.target_dir}")
 
 
+def _verify(keys=None) -> int:
+    """Report which datasets are present (target dir exists and is non-empty)."""
+    keys = keys or list(DATASETS.keys())
+    print(f"{'KEY':<22} {'STATUS':<9} TARGET")
+    print("-" * 75)
+    missing = 0
+    for k in keys:
+        d = DATASETS[k]
+        present = d.target_dir.exists() and any(d.target_dir.rglob("*"))
+        missing += (not present)
+        print(f"{k:<22} {'OK' if present else 'MISSING':<9} {d.target_dir}")
+    print("-" * 75)
+    print(f"{len(keys) - missing}/{len(keys)} present; {missing} missing.")
+    return 0 if missing == 0 else 1
+
+
 def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--list", action="store_true")
@@ -224,7 +240,16 @@ def main() -> int:
                    help="keys from --list output")
     p.add_argument("--all-public", action="store_true",
                    help="download every dataset with access=public")
+    p.add_argument("--verify", action="store_true",
+                   help="check which datasets are already present (no download)")
     args = p.parse_args()
+
+    if args.verify:
+        unknown = [k for k in args.datasets if k not in DATASETS]
+        if unknown:
+            print(f"[err] unknown dataset keys: {unknown}")
+            return 1
+        return _verify(args.datasets or None)
 
     if args.list or (not args.datasets and not args.all_public):
         _list()

@@ -223,7 +223,7 @@ ASV 우회 시나리오(특정인 복제 → 화자인증 통과)를 학술적�
 - [x] 스모크 테스트(모델 없이 합성 데이터로 검증) — `tests/test_smoke.py`.
 
 ### 남은 작업 (TODO)
-- [ ] **실측 결과 생성** — XTTS(~2GB) / speechbrain ECAPA / WavLM+AASIST / ASVspoof2019 내려받아 1회 실행, 결과 figure·표 커밋. GPU 환경 필요. (optional 의존성 설치: `requirements.txt` 하단 OPTIONAL 섹션 참고.)
+- [ ] **실측 결과 생성** — XTTS(~2GB) / speechbrain ECAPA / WavLM+AASIST / ASVspoof2019 내려받아 1회 실행, 결과 figure·표 커밋. GPU 환경 필요. 절차는 [docs/runbook_real_measurement.md](docs/runbook_real_measurement.md) 참고.
 
 ## 라이선스
 
