@@ -71,3 +71,8 @@ redteam/submissions/
 *.log
 runs/
 wandb/
+
+# Downloaded datasets (large)
+data/librispeech/
+data/asvspoof2019/
+data/custom_voices/*.wav

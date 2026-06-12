@@ -54,8 +54,11 @@ class ASVspoofDataset(Dataset):
         s = self.samples[idx]
         wav, _ = load_audio(s["audio_path"], target_sr=16000)
         wav = wav[:self.max_audio_len]
+        # Pad to a fixed length for BOTH raw and lfcc so variable-duration clips
+        # produce equal-size features and can be stacked into a batch.
+        if len(wav) < self.max_audio_len:
+            wav = np.pad(wav, (0, self.max_audio_len - len(wav)))
         if self.feature_type == "raw":
-            if len(wav) < self.max_audio_len: wav = np.pad(wav, (0, self.max_audio_len - len(wav)))
             return torch.from_numpy(wav).float(), s["label"]
         return torch.from_numpy(extract_lfcc(wav, n_lfcc=self.n_lfcc)).float(), s["label"]
 
@@ -80,8 +83,11 @@ class ClonedVoiceDataset(Dataset):
         s = self.samples[idx]
         wav, _ = load_audio(s["audio_path"], target_sr=16000)
         wav = wav[:self.max_audio_len]
+        # Pad to a fixed length for BOTH raw and lfcc so variable-duration clips
+        # produce equal-size features and can be stacked into a batch.
+        if len(wav) < self.max_audio_len:
+            wav = np.pad(wav, (0, self.max_audio_len - len(wav)))
         if self.feature_type == "raw":
-            if len(wav) < self.max_audio_len: wav = np.pad(wav, (0, self.max_audio_len - len(wav)))
             return torch.from_numpy(wav).float(), s["label"]
         return torch.from_numpy(extract_lfcc(wav, n_lfcc=self.n_lfcc)).float(), s["label"]
 
